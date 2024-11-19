@@ -1,0 +1,18 @@
+## Interface: 30300
+## Title: EventTracker
+## Notes: Event Tracker allows you to view detailed information on track events
+## Version: 1.5.0-fondlez
+## Author: fondlez
+## X-Website: http://github.com/fondlez
+## X-Category: Development Tools
+## Original-Author: redeye
+## Original-X-Email: wowaddon@xs4all.nl
+## DefaultState: enabled
+## SavedVariables: ET_Data
+
+EventTracker_globals.lua
+EventTracker_events.lua
+EventTracker_static.lua
+EventTracker_en.lua
+EventTracker.lua
+EventTracker.xml
