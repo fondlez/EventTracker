@@ -25,15 +25,20 @@
     ================================================================= --]]
 
 -- local variables
+    local _;
     local ET_FILTER = nil;
+    local ET_TRACKED_EVENTS_TABLE = {}
 
 -- Local table functions
-    local tinsert, wipe = table.insert, table.wipe;
+    local tinsert, wipe = ET_API.tinsert, ET_API.wipe;
     local lower, upper, substr = string.lower, string.upper, string.sub;
-
--- Function to create array of return values
-    function pack(...)
-        return arg;
+    
+    local function tableSize(t)
+        local n = 0
+        for _ in pairs(t) do
+          n = n + 1
+        end
+        return n
     end
 
 -- Send message to the default chat frame
@@ -56,6 +61,14 @@
         if ( not ET_Data ) then ET_Data = {}; end;
         if ( not ET_Data["active"] ) then ET_Data["active"] = true; end;
         if ( not ET_Data["events"] ) then ET_Data["events"] = {}; end;
+        
+        -- Track additional events
+        local events = ET_Data and ET_Data["events"]
+        if not events then return end
+        
+        for key, value in pairs( events ) do
+            EventTracker:RegisterEvent( strtrim( upper( key ) ) )
+        end
 
         -- Register slash commands
         SlashCmdList["EVENTTRACKER"] = EventTracker_SlashHandler;
@@ -70,16 +83,12 @@
 
         -- Track other events
         for key, value in pairs( ET_TRACKED_EVENTS ) do
-            self:RegisterEvent( strtrim( upper( value ) ) );
+            -- Cache fixed data of array into lookup table for later use
+            -- Note. array data kept for compatibility to other addon versions
+            local name = strtrim( upper( value ) )
+            ET_TRACKED_EVENTS_TABLE[name] = true
+            self:RegisterEvent( name )
         end;
-        
-        -- Track additional events
-        local events = ET_Data and ET_Data["events"]
-        if events then
-          for key, value in pairs( events ) do
-              this:RegisterEvent( strtrim( upper( value ) ) );
-          end;        
-        end
     end;
     
 -- Remove the events listed to be ignored
@@ -228,29 +237,29 @@
 
 -- Handle events sent to the addon
     function EventTracker_OnEvent( self, event, ... )
-        local logEvent = true;
-
         if ( event == "VARIABLES_LOADED" ) then
             EventTracker_Init();
         end;
+        
+        if not ET_Data["active"] then return end
+        
+        local logEvent = true
+        -- Apply filter, except always add ET_TRACKED_EVENTS
+        if ET_FILTER then
+            -- Prevent event from being logged when it does not match filter
+            if not event:find( ET_FILTER, 1, true ) then
+                logEvent = false
+            end;
+
+            -- But be sure to include event if within ET_TRACKED_EVENTS
+            if ET_TRACKED_EVENTS_TABLE[event] then
+                logEvent = true
+            end
+        end
 
         -- Store event data
-        if ( ET_Data["active"] ) then
-            if ET_FILTER then
-                -- Prevent event from being logged when it does not match the filter
-                if not event:find( ET_FILTER, 1, true ) then
-                    logEvent = false;
-                end;
-
-                -- But be sure to include it when it appears within ET_TRACKED_EVENTS
-                if tContains( ET_TRACKED_EVENTS, event ) then
-                    logEvent = true;
-                end;
-            end;
-
-            if ( logEvent ) then
-                EventTracker_AddInfo( event, { ... }, true );
-            end;
+        if ( logEvent ) then
+            EventTracker_AddInfo( event, { ... }, true );
         end;
      end;
 
@@ -362,7 +371,8 @@
         _G["EventCount"]:SetText( ET_EVENT_COUNT:format( #ET_EventDetail ) );
 
         -- Number of events that are being tracked
-        _G["EventsTracked"]:SetText( ET_EVENTS_TRACKED:format( #ET_TRACKED_EVENTS ) );
+        _G["EventsTracked"]:SetText( ET_EVENTS_TRACKED:format( #ET_TRACKED_EVENTS 
+            + ( ET_Data and ET_Data["events"] and tableSize(ET_Data["events"]) or 0 ) ) );
 
         -- Memory usage
         _G["EventMemory"]:SetText( ET_MEMORY:format( GetAddOnMemoryUsage( "EventTracker" ) ) );
@@ -385,14 +395,20 @@
 -- Toggle tracking
     function EventTracker_Toggle()
         ET_Data["active"] = not ET_Data["active"];
+        EventTracker_Message(
+            format("Tracking: %s", ET_Data["active"] and "ON" or "OFF"), 
+            true)
         EventTracker_UpdateUI();
     end;
-
+    
+    -- Forward local function declaration
+    local toggleCommandEvent
+    
 -- Handle click on event item
     function EventTracker_EventOnClick( self, button, down )
         local event, timestamp, data, realevent, time_usage, call_stack = unpack( ET_EventDetail[ FauxScrollFrame_GetOffset( EventTracker_Details ) + self:GetID() ] );
 
-        if ( IsShiftKeyDown() ) then
+        if ( IsShiftKeyDown() and button == "LeftButton" ) then
             EventTracker:UnregisterEvent( event );
             EventTracker_PurgeEvent( event );
             EventTracker_Message( "Event "..event.." has been removed" , true );
@@ -417,9 +433,34 @@
                 if ( not EventDetailFrame:IsVisible() ) then
                     EventTracker_Toggle_Details();
                 end;
+            elseif ( button == "RightButton" ) then
+                toggleCommandEvent(event)
             end;
         end;
     end;
+    
+    function EventTracker_AllNoneOnClick( self, button, down )
+        local text = ETAllNoneButton:GetText()
+        if text == ET_ALLNONE_BUTTON_ALL then
+          EventTracker_RegisterAll()
+          ETAllNoneButton:SetText(ET_ALLNONE_BUTTON_NONE)
+        else
+          EventTracker_UnregisterAll()
+          ETAllNoneButton:SetText(ET_ALLNONE_BUTTON_ALL)
+        end
+    end
+    
+    -- Forward local function declaration
+    local clearEventsWithCommand
+    
+    function EventTracker_ResetOnClick( self, button, down )
+        if IsShiftKeyDown() then
+            clearEventsWithCommand()
+            EventTracker_ResetEvents()
+        else
+            EventTracker_ResetEvents()
+        end
+    end
 
 -- Show help message
     function EventTracker_ShowHelp()
@@ -427,6 +468,52 @@
             EventTracker_Message( value );
         end;
     end;
+    
+    local function addEventWithCommand(event)
+        if not ET_Data["events"] then return end
+        
+        local events = ET_Data["events"]
+        events[event] = true
+        EventTracker_Message(format("Added event '%s'", event), true)
+    end
+    
+    local function removeEventWithCommand(event)
+        if not ET_Data["events"] then return end
+        
+        local events = ET_Data["events"]
+        if events[event] then
+            events[event] = nil
+            EventTracker_Message(format("Removed event '%s'", event), true)
+        else
+            EventTracker_Message(
+              format("Unable to remove. Event not found: '%s'", event), true)
+        end
+    end
+    
+    -- Forwarded local function
+    toggleCommandEvent = function(event)
+        if not ET_Data["events"] then return end
+        
+        local events = ET_Data["events"]
+        if not events[event] then
+            addEventWithCommand(event)
+        else
+            removeEventWithCommand(event)
+        end
+    end
+    
+    -- Forwarded local function
+    clearEventsWithCommand = function()
+        local events = ET_Data["events"]
+        if events then
+          for key, value in pairs( events ) do
+              EventTracker:UnregisterEvent( strtrim( upper( key ) ) )
+              events[key] = nil
+          end
+          
+          EventTracker_Message("Cleared all additional tracked events.", true)
+        end
+    end
     
     local function keys(t)
         if not t then return end
@@ -437,7 +524,7 @@
         return result
     end
     
-    local function listEvents()
+    local function listEventsWithCommand()
         local events
         if ET_Data and ET_Data["events"] then 
             events = keys(ET_Data["events"])
@@ -458,14 +545,83 @@
     end
     
     local function showFilter()
-        if ET_FILTER then
+        if not ET_FILTER then
+            EventTracker_Message("No event filter.", true)
+        else
             EventTracker_Message(format("Filter: '%s'", tostring(ET_FILTER)), 
                 true)
-        else
-            EventTracker_Message("No event filter.", true)
         end
     end
+    
+    local function addFilter(event)
+        if event ~= "" then
+            ET_FILTER = event
+        end
+        
+        showFilter()
+    end
+    
+    local function removeFilter()
+        if ET_FILTER then
+            ET_FILTER = nil
+            EventTracker_Message("Filter removed.", true)
+            return
+        end
+        showFilter()
+    end
+    
+    local function enableTracking()
+        ET_Data["active"] = true
+        EventTracker_Message("Tracking: ON", true)
+        EventTracker_UpdateUI()
+    end
+    
+    local function disableTracking()
+        ET_Data["active"] = false
+        EventTracker_Message("Tracking: OFF", true)
+        EventTracker_UpdateUI()
+    end
+    
+    function EventTracker_AddTrackedEvents()
+        -- Track other events
+        for key, value in pairs( ET_TRACKED_EVENTS ) do
+            EventTracker:RegisterEvent( strtrim( upper( value ) ) );
+        end;
+        
+        -- Track additional events
+        local events = ET_Data and ET_Data["events"]
+        if not events then return end
+        for key, value in pairs( events ) do
+            EventTracker:RegisterEvent( strtrim( upper( key ) ) );
+        end
+    end
+    
+    function EventTracker_RegisterAll()
+        EventTracker:RegisterAllEvents();
+        EventTracker_RemoveIgnoredEvents();
+        EventTracker_Message("All events registered, except ignored events.", 
+            true)
+    end
+    
+    function EventTracker_UnregisterAll()
+        EventTracker_Purge()
+        EventTracker:UnregisterAllEvents();
+        EventTracker:RegisterEvent( "VARIABLES_LOADED" );
+        EventTracker_Message(
+            "All events unregistered, except VARIABLES_LOADED. Data purged.", 
+            true)
+    end
 
+    function EventTracker_ResetEvents()
+        EventTracker_Purge()
+        EventTracker:UnregisterAllEvents();
+        EventTracker:RegisterEvent( "VARIABLES_LOADED" );
+        EventTracker_AddTrackedEvents()
+        EventTracker_Message(
+            "All events unregistered, except tracked events. Data purged.", 
+            true)
+    end
+    
 -- Handle slash commands
     function EventTracker_SlashHandler( msg, editbox )
         -- arguments should be handled case-insensitve
@@ -486,29 +642,29 @@
         elseif ( command == "add" and event ~= "" ) then
             -- Add event to be tracked
             EventTracker:RegisterEvent( event );
-            local events = ET_Data["events"]
-            events[event] = true
+            addEventWithCommand( event )
 
         elseif ( (command == "remove" or command == "del") and event ~= "" ) 
                 then
-            -- Remove event to be tracked
+            -- Remove additional event
             EventTracker:UnregisterEvent( event );
-            local events = ET_Data["events"]
-            events[event] = nil
+            removeEventWithCommand( event )
             
         elseif ( command == "list" ) then
-            -- Show all additional tracked events in system chat
-            listEvents()
+            -- Show all additional events in system chat
+            listEventsWithCommand()
+            
+        elseif ( command == "clear" ) then
+            -- Remove all additional events
+            clearEventsWithCommand()
             
         elseif ( command == "off" ) then
             -- Disable tracking
-            ET_Data["active"] = false
-            EventTracker_UpdateUI()
-
+            disableTracking()
+            
         elseif ( command == "on" ) then
             -- Enable tracking
-            ET_Data["active"] = true
-            EventTracker_UpdateUI()
+            enableTracking()
             
         elseif ( command == "toggle" ) then
             -- Toggle event tracking
@@ -516,31 +672,28 @@
             
         elseif ( command == "filter" ) then
             -- Set filter to be applied to registerall events
-            if event == "" then
-                showFilter()
-            else
-                ET_FILTER = event
-            end
+            addFilter(event)
             
         elseif ( command == "removefilter" or command == "delfilter" ) then
             -- Remove the filter
-            ET_FILTER = nil;
+            removeFilter()
             
         elseif ( command == "purge" ) then
             -- Purge all event data
             EventTracker_Purge()
+            EventTracker_Message("All event data purged.", true)
             
-        elseif ( command == "registerall" ) then
-            -- Track all events
-            EventTracker:RegisterAllEvents();
-            EventTracker_RemoveIgnoredEvents();
-            ET_Data["events"] = {}
+        elseif ( command == "reset" ) then
+            -- Unregister all events, then add back all tracked events
+            EventTracker_ResetEvents()
             
-        elseif ( command == "unregisterall" ) then
-            -- Track all events
-            EventTracker:UnregisterAllEvents();
-            EventTracker:RegisterEvent( "VARIABLES_LOADED" );
-            ET_Data["events"] = {}
+        elseif ( command == "registerall" or command == "all" ) then
+            -- Register all events
+            EventTracker_RegisterAll()
+            
+        elseif ( command == "unregisterall" or command == "none" ) then
+            -- Unregister all events, except VARIABLES_LOADED
+            EventTracker_UnregisterAll()
             
         elseif ( msg == "help" ) or ( msg == "?" ) then
             -- Show help info

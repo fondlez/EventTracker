@@ -1,7 +1,7 @@
 ## Interface: 30300
 ## Title: EventTracker
 ## Notes: Event Tracker allows you to view detailed information on track events
-## Version: 1.5.0-fondlez
+## Version: 1.1.0-fondlez
 ## Author: fondlez
 ## X-Website: http://github.com/fondlez
 ## X-Category: Development Tools

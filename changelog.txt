@@ -1,21 +1,8 @@
-Version: 1.5.0-fondlez - November 19, 2024
- - Added: command `/et add`: Add event to be tracked
- - Added: command `/et { remove | del }`: Remove event to be tracked
- - Added: command `/et list`: List the added tracked events
- - Added: command `/et off`: Turn off tracking
- - Added: command `/et on`: Turn on tracking
- - Added: command `/et toggle`: Toggle tracking on or off
- - Added: command `/et filter`: Filter for events (plain substring)
- - Added: command `/et { removefilter | delfilter }`: Remove filter
- - Added: command `/et purge`: Purge all event data
- - Added: shift-click event in main window to remove event and purge its data
- - Added: editable Lua suport for Ignored events in EventTracker_events.lua
- - Changed: prevent Escape from closing main window dialog like a special menu
- 
 Version 1.4 - January 18, 2010
  - Fixed: Width increased for showing frame names
  - Changed: Increased number of frame names visible in detail window
- - Added: For functions the stack is traced as well. This allows for easier way of pinpointing which AddOn called a function
+ - Added: For functions the stack is traced as well. This allows for easier way 
+   of pinpointing which AddOn called a function
 
 Version 1.3 - December 8, 2009
  - Changed: Updated for 3.3

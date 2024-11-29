@@ -81,7 +81,7 @@
             </Frame>
         </Frames>
         <Scripts>
-            <OnLoad>self:RegisterForClicks( "LeftButtonUp" );</OnLoad>
+            <OnLoad>self:RegisterForClicks( "LeftButtonUp" , "RightButtonUp" );</OnLoad>
             <OnClick>EventTracker_EventOnClick( self, button, down );</OnClick>
         </Scripts>
         <HighlightTexture file="Interface\QuestFrame\UI-QuestTitleHighlight" alphaMode="ADD"/>
@@ -369,17 +369,21 @@
                     </Frame>
                     <!-- Scroll buttons -->
                     <ScrollFrame name="EventTracker_Arguments" inherits="FauxScrollFrameTemplate" enableMouse="true">
-                        <Size>
-                            <AbsDimension x="16" y="159"/>
-                        </Size>
                         <Anchors>
-                            <Anchor point="TOPRIGHT" relativeTo="Event_Argument_Frame" relativePoint="TOPRIGHT">
-                                <Offset><AbsDimension x="-28" y="-6"/></Offset>
-                            </Anchor>
+                          <Anchor point="TOPLEFT" relativeTo="Event_Argument_Frame">
+                            <Offset>
+                              <AbsDimension x="0" y="-6"/>
+                            </Offset>
+                          </Anchor>
+                          <Anchor point="BOTTOMRIGHT" relativeTo="Event_Argument_Frame">
+                            <Offset>
+                              <AbsDimension x="-28" y="5"/>
+                            </Offset>
+                          </Anchor>
                         </Anchors>
                         <Scripts>
                             <OnVerticalScroll>
-                                FauxScrollFrame_OnVerticalScroll( self, offset, 16, EventTracker_Scroll_Arguments );
+                                ET_API.FauxScrollFrame_OnVerticalScroll( self, offset, 16, EventTracker_Scroll_Arguments );
                             </OnVerticalScroll>
                         </Scripts>
                     </ScrollFrame>
@@ -513,17 +517,21 @@
 
                     <!-- Scroll buttons -->
                     <ScrollFrame name="EventTracker_Frames" inherits="FauxScrollFrameTemplate" enableMouse="true">
-                        <Size>
-                            <AbsDimension x="16" y="111"/>
-                        </Size>
                         <Anchors>
-                            <Anchor point="TOPRIGHT" relativeTo="Event_Frame_Frame" relativePoint="TOPRIGHT">
-                                <Offset><AbsDimension x="-28" y="-6"/></Offset>
-                            </Anchor>
+                          <Anchor point="TOPLEFT" relativeTo="Event_Frame_Frame">
+                            <Offset>
+                              <AbsDimension x="0" y="-6"/>
+                            </Offset>
+                          </Anchor>
+                          <Anchor point="BOTTOMRIGHT" relativeTo="Event_Frame_Frame">
+                            <Offset>
+                              <AbsDimension x="-28" y="5"/>
+                            </Offset>
+                          </Anchor>
                         </Anchors>
                         <Scripts>
                             <OnVerticalScroll>
-                                FauxScrollFrame_OnVerticalScroll( self, offset, 16, EventTracker_Scroll_Frames );
+                                ET_API.FauxScrollFrame_OnVerticalScroll( self, offset, 16, EventTracker_Scroll_Frames );
                             </OnVerticalScroll>
                         </Scripts>
                     </ScrollFrame>
@@ -670,17 +678,21 @@
 
             <!-- Scroll buttons -->
             <ScrollFrame name="EventTracker_Details" inherits="FauxScrollFrameTemplate" enableMouse="true">
-                <Size>
-                    <AbsDimension x="16" y="299"/>
-                </Size>
                 <Anchors>
-                    <Anchor point="TOPRIGHT" relativeTo="$parentBorder" relativePoint="TOPRIGHT">
-                        <Offset><AbsDimension x="-28" y="-6"/></Offset>
-                    </Anchor>
+                  <Anchor point="TOPLEFT" relativeTo="$parentBorder">
+                    <Offset>
+                      <AbsDimension x="0" y="-6"/>
+                    </Offset>
+                  </Anchor>
+                  <Anchor point="BOTTOMRIGHT" relativeTo="$parentBorder">
+                    <Offset>
+                      <AbsDimension x="-28" y="5"/>
+                    </Offset>
+                  </Anchor>
                 </Anchors>
                 <Scripts>
                     <OnVerticalScroll>
-                        FauxScrollFrame_OnVerticalScroll( self, offset, 30, EventTracker_Scroll_Details );
+                        ET_API.FauxScrollFrame_OnVerticalScroll( self, offset, 30, EventTracker_Scroll_Details );
                     </OnVerticalScroll>
                 </Scripts>
             </ScrollFrame>
@@ -752,6 +764,46 @@
                     </OnClick>
                 </Scripts>
             </Button>
+            
+            <!-- AllNone button -->
+            <Button name="ETAllNoneButton" inherits="UIPanelButtonTemplate" text="ET_ALLNONE_BUTTON_ALL">
+                <Size>
+                    <AbsDimension x="100" y="21"/>
+                </Size>
+                <Anchors>
+                    <Anchor point="RIGHT" relativeTo="$parent" relativePoint="CENTER">
+                        <Offset><AbsDimension x="0" y="0"/></Offset>
+                    </Anchor>
+                    <Anchor point="BOTTOM" relativeTo="$parent" relativePoint="BOTTOM">
+                        <Offset><AbsDimension x="0" y="15"/></Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        EventTracker_AllNoneOnClick( self, button, down )
+                    </OnClick>
+                </Scripts>
+            </Button>
+            
+            <!-- Reset button -->
+            <Button name="$parentResetButton" inherits="UIPanelButtonTemplate" text="ET_RESET_BUTTON">
+                <Size>
+                    <AbsDimension x="100" y="21"/>
+                </Size>
+                <Anchors>
+                    <Anchor point="LEFT" relativeTo="$parent" relativePoint="CENTER">
+                        <Offset><AbsDimension x="0" y="0"/></Offset>
+                    </Anchor>
+                    <Anchor point="BOTTOM" relativeTo="$parent" relativePoint="BOTTOM">
+                        <Offset><AbsDimension x="0" y="15"/></Offset>
+                    </Anchor>
+                </Anchors>
+                <Scripts>
+                    <OnClick>
+                        EventTracker_ResetOnClick( self, button, down )
+                    </OnClick>
+                </Scripts>
+            </Button>
 
             <Frame>
                 <Layers>
@@ -772,11 +824,6 @@
 
         </Frames>
         <Scripts>
-            <OnLoad>
-<!--
-                tinsert( UISpecialFrames, self:GetName() );
--->
-            </OnLoad>
             <OnShow>
                 EventTracker_Scroll_Details();
             </OnShow>
