@@ -8,6 +8,10 @@ Tested clients: 2.4.3 (The Burning Crusade), 3.3.5 (Wrath of the Lich King).
 This version is a backport from redeye's Event Tracker 1.4 (January 18, 2010) 
 with fixes and improvements.
 
+## Graphical Interface
+
+![Main Window screenshot](doc/img/addon-eventtracker-1.1.0-main.jpg)
+
 ## Slash Commands
 
 **/et** - open/close EventTracker dialog
