@@ -60,7 +60,7 @@ the On/Off button at the bottom of the main window or by using the `/et off`,
 reload.
 
 ### Shift Click Events in the Main Window
-###### *"I Want Just This One!"*
+###### *"Get Out!"*
 
 - shift-clicking any event in the list of events of the main window will 
 unregister the event and purge all data for that event.
