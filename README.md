@@ -3,9 +3,10 @@
 Event Tracker is an addon for World of Warcraft that allows you to view detailed 
 information on tracked events.
 
-Tested clients: 2.4.3 (The Burning Crusade), 3.3.5 (Wrath of the Lich King).
+Tested clients: 2.4.3 (The Burning Crusade), 3.3.5 (Wrath of the Lich King),
+4.3.4 (Cataclysm), and 5.4.8 (Mists of Pandaria).
 
-This version is a backport from redeye's Event Tracker 1.4 (January 18, 2010) 
+This version is a port from redeye's Event Tracker 1.4 (January 18, 2010) 
 with fixes and improvements.
 
 ## Graphical Interface
@@ -60,7 +61,7 @@ the On/Off button at the bottom of the main window or by using the `/et off`,
 reload.
 
 ### Shift Click Events in the Main Window
-###### *"Get Out!"*
+###### *"I Want Just This One!"*
 
 - shift-clicking any event in the list of events of the main window will 
 unregister the event and purge all data for that event.
